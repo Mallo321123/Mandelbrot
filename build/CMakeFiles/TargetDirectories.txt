@@ -1,0 +1,4 @@
+/home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles/mandelbrot.dir
+/home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles/test_mandelbrot.dir
+/home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles/edit_cache.dir
+/home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles/rebuild_cache.dir

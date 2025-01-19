@@ -1,0 +1,26 @@
+[
+{
+  "directory": "/home/mario/Meins/Programmieren/c++/Mandelbrot/build",
+  "command": "/usr/bin/clang++-15  -I/home/mario/Meins/Programmieren/c++/Mandelbrot/include -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/mandelbrot.dir/src/main.cpp.o -c /home/mario/Meins/Programmieren/c++/Mandelbrot/src/main.cpp",
+  "file": "/home/mario/Meins/Programmieren/c++/Mandelbrot/src/main.cpp",
+  "output": "CMakeFiles/mandelbrot.dir/src/main.cpp.o"
+},
+{
+  "directory": "/home/mario/Meins/Programmieren/c++/Mandelbrot/build",
+  "command": "/usr/bin/clang++-15  -I/home/mario/Meins/Programmieren/c++/Mandelbrot/include -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o -c /home/mario/Meins/Programmieren/c++/Mandelbrot/src/mandelbrot.cpp",
+  "file": "/home/mario/Meins/Programmieren/c++/Mandelbrot/src/mandelbrot.cpp",
+  "output": "CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o"
+},
+{
+  "directory": "/home/mario/Meins/Programmieren/c++/Mandelbrot/build",
+  "command": "/usr/bin/clang++-15  -I/home/mario/Meins/Programmieren/c++/Mandelbrot/include -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/test_mandelbrot.dir/tests/test_mandelbrot.cpp.o -c /home/mario/Meins/Programmieren/c++/Mandelbrot/tests/test_mandelbrot.cpp",
+  "file": "/home/mario/Meins/Programmieren/c++/Mandelbrot/tests/test_mandelbrot.cpp",
+  "output": "CMakeFiles/test_mandelbrot.dir/tests/test_mandelbrot.cpp.o"
+},
+{
+  "directory": "/home/mario/Meins/Programmieren/c++/Mandelbrot/build",
+  "command": "/usr/bin/clang++-15  -I/home/mario/Meins/Programmieren/c++/Mandelbrot/include -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/test_mandelbrot.dir/src/mandelbrot.cpp.o -c /home/mario/Meins/Programmieren/c++/Mandelbrot/src/mandelbrot.cpp",
+  "file": "/home/mario/Meins/Programmieren/c++/Mandelbrot/src/mandelbrot.cpp",
+  "output": "CMakeFiles/test_mandelbrot.dir/src/mandelbrot.cpp.o"
+}
+]
