@@ -12,7 +12,7 @@ int main(int argc, char **argv)
     double x_min = -2.0, x_max = 1.0;
     double y_min = -1.5, y_max = 1.5;
     int max_iter = 100;
-    int chunk_size = 50;
+    int chunk_size = 10;
     int num_workers = 15;
     std::string filename = "mandelbrot.png";
 
