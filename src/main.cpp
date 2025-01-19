@@ -3,8 +3,8 @@
 #include "mandelbrot.hpp"
 
 int main() {
-    int width = 8000;
-    int height = 6000;
+    int width = 80000;
+    int height = 60000;
     double x_min = -2.0, x_max = 1.0;
     double y_min = -1.5, y_max = 1.5;
     int max_iter = 100;
@@ -13,7 +13,7 @@ int main() {
 
     std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
 
-    // Bildmatrix initialisieren
+    // Bildmatrix für das finale Bild
     cv::Mat image(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
 
     generate_mandelbrot(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, image);
