@@ -60,6 +60,32 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     png_destroy_write_struct(&png, &info);
 }
 
+void chunk_limited(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int chunk_start, int chunk_end, std::string out_path, bool silent)
+{
+    std::cout << "Berechne nur Chunks von " << chunk_start << " bis " << chunk_end << std::endl;
+    std::cout << "Speichere Chunks in: " << out_path << std::endl;
+
+    fs::create_directory(out_path);
+    std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
+    generate_mandelbrot_limited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, chunk_start, chunk_end, out_path, silent);
+}
+
+void chunk_unlimited(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, std::string temp_dir, std::string filename, bool silent)
+{
+    std::cout << "Dateiname: " << filename << std::endl;
+
+    fs::create_directory(temp_dir);
+
+    // Mandelbrot berechnen
+    std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
+    generate_mandelbrot_chunked(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, temp_dir, silent);
+
+    std::cout << "Füge Chunks zusammen und speichere Bild..." << std::endl;
+    write_image_chunked(filename, width, height, chunk_size, temp_dir);
+
+    fs::remove_all(temp_dir);
+}
+
 int main(int argc, char **argv)
 {
     // Standardwerte für die Argumente
@@ -69,8 +95,12 @@ int main(int argc, char **argv)
     double y_min = -1.5, y_max = 1.5;
     int max_iter = 100;
     int chunk_size = 100;
-    int num_workers = 15;
+    int num_workers = 3;
     std::string filename = "mandelbrot.png";
+    int chunk_start = -1;
+    int chunk_end = -1;
+    std::string out_path = "chunks";
+    bool silent = false;
 
     // Überprüfen, ob Argumente übergeben wurden
     if (argc > 1)
@@ -120,6 +150,46 @@ int main(int argc, char **argv)
             {
                 filename = std::string(argv[++i]);
             }
+            else if (arg == "--chunk_start" && i + 1 < argc)
+            {
+                chunk_start = std::stoi(argv[++i]);
+            }
+            else if (arg == "--chunk_end" && i + 1 < argc)
+            {
+                chunk_end = std::stoi(argv[++i]);
+            }
+            else if (arg == "--out_path" && i + 1 < argc)
+            {
+                out_path = std::string(argv[++i]);
+            }
+            else if (arg == "--silent" || arg == "-s")
+            {
+                silent = true;
+            }
+            else if (arg == "--help")
+            {
+                std::cout << "Verwendung: " << argv[0] << " [OPTIONEN]" << std::endl;
+                std::cout << "Optionen:" << std::endl;
+                std::cout << "  --help             Zeige diese Hilfe an" << std::endl;
+                std::cout << "  --silent, -s       Keine Vortschritts Ausgabe auf der Konsole" << std::endl;
+                std::cout << "  Bild Optionen:" << std::endl;
+                std::cout << "    --width N          Breite des Bildes (Standard: 8000) (Es sollte das seitenverhältniss eingehalten werden)" << std::endl;
+                std::cout << "    --height N         Höhe des Bildes (Standard: 6000)" << std::endl;
+                std::cout << "    --x_min N          Minimum des x-Bereichs (Standard: -2.0)" << std::endl;
+                std::cout << "    --x_max N          Maximum des x-Bereichs (Standard: 1.0)" << std::endl;
+                std::cout << "    --y_min N          Minimum des y-Bereichs (Standard: -1.5)" << std::endl;
+                std::cout << "    --y_max N          Maximum des y-Bereichs (Standard: 1.5)" << std::endl;
+                std::cout << "    --max_iter N       Maximale Anzahl an Iterationen (Standard: 100)" << std::endl;
+                std::cout << "  Compute optionen:" << std::endl;
+                std::cout << "    --chunk_size N     Größe der Chunks (Standard: 100)" << std::endl;
+                std::cout << "    --num_workers N    Anzahl der Worker (Standard: 3)" << std::endl;
+                std::cout << "    --filename STR     Dateiname des Bildes (Standard: mandelbrot.png)" << std::endl;
+                std::cout << "  Sonstige Optionen:" << std::endl;
+                std::cout << "    --chunk_start N    Startindex des Chunks (Standard: NULL)" << std::endl;
+                std::cout << "    --chunk_end N      Endindex des Chunks (Standard: NULL)" << std::endl;
+                std::cout << "    --out_path STR     Pfad zum Speichern der Chunks (Standard: chunks)" << std::endl;
+                return 0;
+            }
             else
             {
                 std::cerr << "Unbekanntes Argument: " << arg << std::endl;
@@ -128,26 +198,27 @@ int main(int argc, char **argv)
         }
     }
 
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     std::cout << "Bildgröße: " << width << "x" << height << std::endl;
     std::cout << "Mandelbrot-Bereich: [" << x_min << ", " << x_max << "], [" << y_min << ", " << y_max << "]" << std::endl;
     std::cout << "Maximale Iterationen: " << max_iter << std::endl;
     std::cout << "Chunk-Größe: " << chunk_size << std::endl;
     std::cout << "Anzahl der Worker: " << num_workers << std::endl;
-    std::cout << "Dateiname: " << filename << std::endl;
 
-    auto start_time = std::chrono::high_resolution_clock::now();
-
-    std::string temp_dir = "temp_chunks";
-    fs::create_directory(temp_dir);
-
-    // Mandelbrot berechnen
-    std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
-    generate_mandelbrot_chunked(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, temp_dir);
-
-    std::cout << "Füge Chunks zusammen und speichere Bild..." << std::endl;
-    write_image_chunked(filename, width, height, chunk_size, temp_dir);
-
-    fs::remove_all(temp_dir);
+    if (chunk_start != -1 && chunk_end != -1)
+    {
+        chunk_limited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, chunk_start, chunk_end, out_path, silent);
+    }
+    else if (chunk_start != -1 || chunk_end != -1)
+    {
+        std::cerr << "Fehler: chunk_start und chunk_end müssen beide gesetzt sein." << std::endl;
+        return 1;
+    }
+    else
+    {
+        chunk_unlimited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, "temp_chunks", filename, silent);
+    }
 
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end_time - start_time;
