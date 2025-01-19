@@ -154,7 +154,7 @@ int main(int argc, char **argv)
             {
                 chunk_size = std::stoi(argv[++i]);
             }
-            else if ((arg == "--num_workers" || arg == "-w") && i + 1 < argc)
+            else if (arg == "--num_workers" && i + 1 < argc)
             {
                 num_workers = std::stoi(argv[++i]);
             }
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
                 std::cout << "    --max_iter N              Maximale Anzahl an Iterationen (Standard: 100)" << std::endl;
                 std::cout << "  Compute optionen:" << std::endl;
                 std::cout << "    --chunk_size N            Größe der Chunks (Standard: 100)" << std::endl;
-                std::cout << "    --num_workers N, -w N     Anzahl der Worker (Standard: 3)" << std::endl;
+                std::cout << "    --num_workers N           Anzahl der Worker (Standard: 3)" << std::endl;
                 std::cout << "    --filename STR, -f STR    Dateiname des Bildes (Standard: mandelbrot.png)" << std::endl;
                 std::cout << "  Sonstige Optionen:" << std::endl;
                 std::cout << "    --intervall N             Intervall der Chunks (Standard: Off)" << std::endl;
