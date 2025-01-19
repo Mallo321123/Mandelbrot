@@ -1,18 +1,22 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <cstdlib> // Für std::stoi und std::stod
+#include <cstdlib>
 #include <chrono>
+#include <filesystem>
+#include <png.h>
 #include "mandelbrot.hpp"
+
+namespace fs = std::filesystem;
 
 int main(int argc, char **argv)
 {
     // Standardwerte für die Argumente
-    int width = 8000;
-    int height = 6000;
+    int width = 80000;
+    int height = 60000;
     double x_min = -2.0, x_max = 1.0;
     double y_min = -1.5, y_max = 1.5;
     int max_iter = 100;
-    int chunk_size = 10;
+    int chunk_size = 100;
     int num_workers = 15;
     std::string filename = "mandelbrot.png";
 
@@ -81,22 +85,54 @@ int main(int argc, char **argv)
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // Bildmatrix initialisieren
-    cv::Mat image(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+    std::string temp_dir = "temp_chunks";
+    fs::create_directory(temp_dir);
 
     // Mandelbrot berechnen
     std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
-    generate_mandelbrot(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, image);
+    generate_mandelbrot_chunked(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, temp_dir);
+
+    std::cout << "Füge Chunks zusammen..." << std::endl;
+    // Erstelle das finale Bild
+    cv::Mat final_image(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+
+    // Berechne die Anzahl der Chunks
+    int num_chunks = (height + chunk_size - 1) / chunk_size;
+
+    for (int chunk_idx = 0; chunk_idx < num_chunks; ++chunk_idx)
+    {
+        // Lade den Chunk
+        std::string chunk_filename = temp_dir + "/chunk_" + std::to_string(chunk_idx) + ".png";
+        cv::Mat chunk = cv::imread(chunk_filename);
+
+        if (chunk.empty())
+        {
+            std::cerr << "Fehler: Konnte Chunk nicht laden: " << chunk_filename << std::endl;
+            continue;
+        }
+
+        // Berechne die y-Bereiche des Chunks
+        int y_start = chunk_idx * chunk_size;
+        int y_end = std::min(y_start + chunk.rows, height);
+
+        // Füge den Chunk in das Zielbild ein
+        chunk.copyTo(final_image(cv::Rect(0, y_start, width, y_end - y_start)));
+    }
+
+    // Temporäre Dateien löschen
+    fs::remove_all(temp_dir);
+
+    // Timer stoppen
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end_time - start_time;
 
     // Bild speichern
     std::cout << "Speichere Bild..." << std::endl;
-    cv::imwrite(filename, image);
-    std::cout << "Bild gespeichert als " << filename << "." << std::endl;
+    cv::imwrite("mandelbrot_large_parallel.png", final_image);
+    std::cout << "Bild gespeichert als 'mandelbrot_large_parallel.png'." << std::endl;
 
-
-    auto end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end_time - start_time;
-    std::cout << "Bild genneriert in " << duration.count() << " Sekunden." << std::endl;
+    // Laufzeit ausgeben
+    std::cout << "Das Programm hat " << duration.count() << " Sekunden benötigt." << std::endl;
 
     return 0;
 }
