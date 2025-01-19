@@ -86,14 +86,14 @@ void chunk_unlimited(int width, int height, int x_min, int x_max, int y_min, int
     fs::remove_all(temp_dir);
 }
 
-void chunk_intervall(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int intervall, std::string out_path, bool silent)
+void chunk_intervall(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int intervall, std::string out_path, bool silent, int offset)
 {
     std::cout << "Berechne Chunks in Intervallen von " << intervall << std::endl;
     std::cout << "Speichere Chunks in: " << out_path << std::endl;
 
     fs::create_directory(out_path);
     std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
-    generate_mandelbrot_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, out_path, silent);
+    generate_mandelbrot_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, out_path, silent, offset);
 }
 
 int main(int argc, char **argv)
@@ -112,6 +112,7 @@ int main(int argc, char **argv)
     std::string out_path = "chunks";
     bool silent = false;
     int intervall = -1;
+    int offset = 0;
 
     // Überprüfen, ob Argumente übergeben wurden
     if (argc > 1)
@@ -181,6 +182,10 @@ int main(int argc, char **argv)
             {
                 intervall = std::stoi(argv[++i]);
             }
+            else if (arg == "--offset" && i + 1 < argc)
+            {
+                offset = std::stoi(argv[++i]);
+            }
             else if (arg == "--help")
             {
                 std::cout << "Verwendung: " << argv[0] << " [OPTIONEN]" << std::endl;
@@ -201,6 +206,7 @@ int main(int argc, char **argv)
                 std::cout << "    --filename STR, -f STR    Dateiname des Bildes (Standard: mandelbrot.png)" << std::endl;
                 std::cout << "  Sonstige Optionen:" << std::endl;
                 std::cout << "    --intervall N             Intervall der Chunks (Standard: Off)" << std::endl;
+                std::cout << "    --offset N                Offset der Chunks (Standard: 0)" << std::endl;
                 std::cout << "    --chunk_start N           Startindex des Chunks (Standard: Off)" << std::endl;
                 std::cout << "    --chunk_end N             Endindex des Chunks (Standard: Off)" << std::endl;
                 std::cout << "    --out_path STR, -o STR    Pfad zum Speichern der Chunks (Standard: chunks)" << std::endl;
@@ -241,7 +247,9 @@ int main(int argc, char **argv)
         else
         {
             std::cout << "Intervall: " << intervall << std::endl;
-            chunk_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, out_path, silent);
+            std::cout << "Offset: " << offset << std::endl;
+
+            chunk_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, out_path, silent, offset);
         }
     }
     else

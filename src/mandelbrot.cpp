@@ -170,7 +170,7 @@ void generate_mandelbrot_limited(int width, int height, double x_min, double x_m
     }
 }
 
-void generate_mandelbrot_intervall(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int intervall, std::string out_path, bool silent)
+void generate_mandelbrot_intervall(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int intervall, std::string out_path, bool silent, int offset)
 {
     namespace fs = std::filesystem;
     if (!fs::exists(out_path))
@@ -181,7 +181,6 @@ void generate_mandelbrot_intervall(int width, int height, int x_min, int x_max, 
     std::vector<std::thread> threads;
     std::mutex file_mutex;
     int num_chunks = (height + chunk_size - 1) / chunk_size;
-
     int num_active_chunks = (num_chunks + intervall - 1) / intervall;
 
     std::cout << "Anzahl der Chunks: " << num_active_chunks << std::endl;
@@ -191,7 +190,7 @@ void generate_mandelbrot_intervall(int width, int height, int x_min, int x_max, 
         int y_start = chunk_idx * chunk_size;
         int y_end = std::min((chunk_idx + 1) * chunk_size, height);
 
-        if (chunk_idx % intervall == 0)
+        if ((chunk_idx + offset) % intervall == 0)
         {
             threads.emplace_back([=, &file_mutex]()
                                  {
