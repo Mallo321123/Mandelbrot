@@ -86,6 +86,16 @@ void chunk_unlimited(int width, int height, int x_min, int x_max, int y_min, int
     fs::remove_all(temp_dir);
 }
 
+void chunk_intervall(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int intervall, std::string out_path, bool silent)
+{
+    std::cout << "Berechne Chunks in Intervallen von " << intervall << std::endl;
+    std::cout << "Speichere Chunks in: " << out_path << std::endl;
+
+    fs::create_directory(out_path);
+    std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
+    generate_mandelbrot_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, out_path, silent);
+}
+
 int main(int argc, char **argv)
 {
     // Standardwerte für die Argumente
@@ -101,6 +111,7 @@ int main(int argc, char **argv)
     int chunk_end = -1;
     std::string out_path = "chunks";
     bool silent = false;
+    int intervall = -1;
 
     // Überprüfen, ob Argumente übergeben wurden
     if (argc > 1)
@@ -110,11 +121,11 @@ int main(int argc, char **argv)
         {
             std::string arg = argv[i];
 
-            if (arg == "--width" && i + 1 < argc)
+            if ((arg == "--width" || arg == "-w") && i + 1 < argc)
             {
                 width = std::stoi(argv[++i]);
             }
-            else if (arg == "--height" && i + 1 < argc)
+            else if ((arg == "--height" || arg == "-h") && i + 1 < argc)
             {
                 height = std::stoi(argv[++i]);
             }
@@ -142,7 +153,7 @@ int main(int argc, char **argv)
             {
                 chunk_size = std::stoi(argv[++i]);
             }
-            else if (arg == "--num_workers" && i + 1 < argc)
+            else if ((arg == "--num_workers" || arg == "-w") && i + 1 < argc)
             {
                 num_workers = std::stoi(argv[++i]);
             }
@@ -158,7 +169,7 @@ int main(int argc, char **argv)
             {
                 chunk_end = std::stoi(argv[++i]);
             }
-            else if (arg == "--out_path" && i + 1 < argc)
+            else if ((arg == "--out_path" || arg == "-o") && i + 1 < argc)
             {
                 out_path = std::string(argv[++i]);
             }
@@ -166,28 +177,33 @@ int main(int argc, char **argv)
             {
                 silent = true;
             }
+            else if (arg == "--intervall" && i + 1 < argc)
+            {
+                intervall = std::stoi(argv[++i]);
+            }
             else if (arg == "--help")
             {
                 std::cout << "Verwendung: " << argv[0] << " [OPTIONEN]" << std::endl;
                 std::cout << "Optionen:" << std::endl;
-                std::cout << "  --help             Zeige diese Hilfe an" << std::endl;
+                std::cout << "  --help, -h         Zeige diese Hilfe an" << std::endl;
                 std::cout << "  --silent, -s       Keine Vortschritts Ausgabe auf der Konsole" << std::endl;
                 std::cout << "  Bild Optionen:" << std::endl;
-                std::cout << "    --width N          Breite des Bildes (Standard: 8000) (Es sollte das seitenverhältniss eingehalten werden)" << std::endl;
-                std::cout << "    --height N         Höhe des Bildes (Standard: 6000)" << std::endl;
-                std::cout << "    --x_min N          Minimum des x-Bereichs (Standard: -2.0)" << std::endl;
-                std::cout << "    --x_max N          Maximum des x-Bereichs (Standard: 1.0)" << std::endl;
-                std::cout << "    --y_min N          Minimum des y-Bereichs (Standard: -1.5)" << std::endl;
-                std::cout << "    --y_max N          Maximum des y-Bereichs (Standard: 1.5)" << std::endl;
-                std::cout << "    --max_iter N       Maximale Anzahl an Iterationen (Standard: 100)" << std::endl;
+                std::cout << "    --width N, -w N           Breite des Bildes (Standard: 8000) (Es sollte das seitenverhältniss eingehalten werden)" << std::endl;
+                std::cout << "    --height N, -h N          Höhe des Bildes (Standard: 6000)" << std::endl;
+                std::cout << "    --x_min N                 Minimum des x-Bereichs (Standard: -2.0)" << std::endl;
+                std::cout << "    --x_max N                 Maximum des x-Bereichs (Standard: 1.0)" << std::endl;
+                std::cout << "    --y_min N                 Minimum des y-Bereichs (Standard: -1.5)" << std::endl;
+                std::cout << "    --y_max N                 Maximum des y-Bereichs (Standard: 1.5)" << std::endl;
+                std::cout << "    --max_iter N              Maximale Anzahl an Iterationen (Standard: 100)" << std::endl;
                 std::cout << "  Compute optionen:" << std::endl;
-                std::cout << "    --chunk_size N     Größe der Chunks (Standard: 100)" << std::endl;
-                std::cout << "    --num_workers N    Anzahl der Worker (Standard: 3)" << std::endl;
-                std::cout << "    --filename STR     Dateiname des Bildes (Standard: mandelbrot.png)" << std::endl;
+                std::cout << "    --chunk_size N            Größe der Chunks (Standard: 100)" << std::endl;
+                std::cout << "    --num_workers N, -w N     Anzahl der Worker (Standard: 3)" << std::endl;
+                std::cout << "    --filename STR, -f STR    Dateiname des Bildes (Standard: mandelbrot.png)" << std::endl;
                 std::cout << "  Sonstige Optionen:" << std::endl;
-                std::cout << "    --chunk_start N    Startindex des Chunks (Standard: NULL)" << std::endl;
-                std::cout << "    --chunk_end N      Endindex des Chunks (Standard: NULL)" << std::endl;
-                std::cout << "    --out_path STR     Pfad zum Speichern der Chunks (Standard: chunks)" << std::endl;
+                std::cout << "    --intervall N             Intervall der Chunks (Standard: Off)" << std::endl;
+                std::cout << "    --chunk_start N           Startindex des Chunks (Standard: Off)" << std::endl;
+                std::cout << "    --chunk_end N             Endindex des Chunks (Standard: Off)" << std::endl;
+                std::cout << "    --out_path STR, -o STR    Pfad zum Speichern der Chunks (Standard: chunks)" << std::endl;
                 return 0;
             }
             else
@@ -214,6 +230,19 @@ int main(int argc, char **argv)
     {
         std::cerr << "Fehler: chunk_start und chunk_end müssen beide gesetzt sein." << std::endl;
         return 1;
+    }
+    else if (intervall != -1)
+    {
+        if (intervall <= 0)
+        {
+            std::cerr << "Fehler: Das Intervall muss größer als 0 sein." << std::endl;
+            return 1;
+        }
+        else
+        {
+            std::cout << "Intervall: " << intervall << std::endl;
+            chunk_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, out_path, silent);
+        }
     }
     else
     {

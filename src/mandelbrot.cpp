@@ -126,8 +126,9 @@ void generate_mandelbrot_limited(int width, int height, double x_min, double x_m
     std::vector<std::thread> threads;
     std::mutex file_mutex;
     int num_chunks = (height + chunk_size - 1) / chunk_size;
+    int num_active_chunks = chunk_end - chunk_start + 1;
 
-    std::cout << "Anzahl der Chunks: " << num_chunks << std::endl;
+    std::cout << "Anzahl der Chunks: " << num_active_chunks << std::endl;
 
     for (int chunk_idx = 0; chunk_idx < num_chunks; ++chunk_idx)
     {
@@ -141,11 +142,67 @@ void generate_mandelbrot_limited(int width, int height, double x_min, double x_m
                                      try {
                                          cv::Mat image(y_end - y_start, width, CV_8UC3, cv::Scalar(0, 0, 0));
 
-                                         compute_chunk(y_start, y_end, width, height, x_min, x_max, y_min, y_max, max_iter, image, chunk_idx, num_chunks, silent);
+                                         compute_chunk(y_start, y_end, width, height, x_min, x_max, y_min, y_max, max_iter, image, chunk_idx, num_active_chunks, silent);
 
                                          {
                                              std::lock_guard<std::mutex> lock(file_mutex);
                                              std::string filename = out_dir + "/chunk_" + std::to_string(chunk_idx) + ".png";
+                                             cv::imwrite(filename, image);
+                                         }
+                                     } catch (const std::exception &e) {
+                                         std::cerr << "Fehler im Thread " << chunk_idx << ": " << e.what() << std::endl;
+                                     } catch (...) {
+                                         std::cerr << "Unbekannter Fehler im Thread " << chunk_idx << std::endl;
+                                     } });
+        }
+
+        if (threads.size() == num_workers || chunk_idx == num_chunks - 1)
+        {
+            for (auto &t : threads)
+            {
+                if (t.joinable())
+                {
+                    t.join();
+                }
+            }
+            threads.clear();
+        }
+    }
+}
+
+void generate_mandelbrot_intervall(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int intervall, std::string out_path, bool silent)
+{
+    namespace fs = std::filesystem;
+    if (!fs::exists(out_path))
+    {
+        fs::create_directory(out_path);
+    }
+
+    std::vector<std::thread> threads;
+    std::mutex file_mutex;
+    int num_chunks = (height + chunk_size - 1) / chunk_size;
+
+    int num_active_chunks = (num_chunks + intervall - 1) / intervall;
+
+    std::cout << "Anzahl der Chunks: " << num_active_chunks << std::endl;
+
+    for (int chunk_idx = 0; chunk_idx < num_chunks; ++chunk_idx)
+    {
+        int y_start = chunk_idx * chunk_size;
+        int y_end = std::min((chunk_idx + 1) * chunk_size, height);
+
+        if (chunk_idx % intervall == 0)
+        {
+            threads.emplace_back([=, &file_mutex]()
+                                 {
+                                     try {
+                                         cv::Mat image(y_end - y_start, width, CV_8UC3, cv::Scalar(0, 0, 0));
+
+                                         compute_chunk(y_start, y_end, width, height, x_min, x_max, y_min, y_max, max_iter, image, chunk_idx, num_active_chunks, silent);
+
+                                         {
+                                             std::lock_guard<std::mutex> lock(file_mutex);
+                                             std::string filename = out_path + "/chunk_" + std::to_string(chunk_idx) + ".png";
                                              cv::imwrite(filename, image);
                                          }
                                      } catch (const std::exception &e) {
