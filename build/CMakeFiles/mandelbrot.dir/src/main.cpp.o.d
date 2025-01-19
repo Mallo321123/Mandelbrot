@@ -406,4 +406,6 @@ CMakeFiles/mandelbrot.dir/src/main.cpp.o: \
   /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/codecvt \
   /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/fs_dir.h \
   /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/fs_ops.h \
+  /usr/include/png.h /usr/include/pnglibconf.h /usr/include/pngconf.h \
+  /usr/include/setjmp.h \
   /home/mario/Meins/Programmieren/c++/Mandelbrot/include/mandelbrot.hpp

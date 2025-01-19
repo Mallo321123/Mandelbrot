@@ -129,19 +129,6 @@ mandelbrot/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mandelbrot.dir/build.make CMakeFiles/mandelbrot.dir/build
 .PHONY : mandelbrot/fast
 
-#=============================================================================
-# Target rules for targets named test_mandelbrot
-
-# Build rule for target.
-test_mandelbrot: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_mandelbrot
-.PHONY : test_mandelbrot
-
-# fast build rule for target.
-test_mandelbrot/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/build
-.PHONY : test_mandelbrot/fast
-
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -172,7 +159,6 @@ src/mandelbrot.o: src/mandelbrot.cpp.o
 # target to build an object file
 src/mandelbrot.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mandelbrot.dir/build.make CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/src/mandelbrot.cpp.o
 .PHONY : src/mandelbrot.cpp.o
 
 src/mandelbrot.i: src/mandelbrot.cpp.i
@@ -181,7 +167,6 @@ src/mandelbrot.i: src/mandelbrot.cpp.i
 # target to preprocess a source file
 src/mandelbrot.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mandelbrot.dir/build.make CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/src/mandelbrot.cpp.i
 .PHONY : src/mandelbrot.cpp.i
 
 src/mandelbrot.s: src/mandelbrot.cpp.s
@@ -190,32 +175,7 @@ src/mandelbrot.s: src/mandelbrot.cpp.s
 # target to generate assembly for a file
 src/mandelbrot.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mandelbrot.dir/build.make CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/src/mandelbrot.cpp.s
 .PHONY : src/mandelbrot.cpp.s
-
-tests/test_mandelbrot.o: tests/test_mandelbrot.cpp.o
-.PHONY : tests/test_mandelbrot.o
-
-# target to build an object file
-tests/test_mandelbrot.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/tests/test_mandelbrot.cpp.o
-.PHONY : tests/test_mandelbrot.cpp.o
-
-tests/test_mandelbrot.i: tests/test_mandelbrot.cpp.i
-.PHONY : tests/test_mandelbrot.i
-
-# target to preprocess a source file
-tests/test_mandelbrot.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/tests/test_mandelbrot.cpp.i
-.PHONY : tests/test_mandelbrot.cpp.i
-
-tests/test_mandelbrot.s: tests/test_mandelbrot.cpp.s
-.PHONY : tests/test_mandelbrot.s
-
-# target to generate assembly for a file
-tests/test_mandelbrot.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/tests/test_mandelbrot.cpp.s
-.PHONY : tests/test_mandelbrot.cpp.s
 
 # Help Target
 help:
@@ -226,16 +186,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... mandelbrot"
-	@echo "... test_mandelbrot"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
 	@echo "... src/mandelbrot.o"
 	@echo "... src/mandelbrot.i"
 	@echo "... src/mandelbrot.s"
-	@echo "... tests/test_mandelbrot.o"
-	@echo "... tests/test_mandelbrot.i"
-	@echo "... tests/test_mandelbrot.s"
 .PHONY : help
 
 

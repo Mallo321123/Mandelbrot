@@ -64,7 +64,6 @@ CMAKE_BINARY_DIR = /home/mario/Meins/Programmieren/c++/Mandelbrot/build
 
 # The main recursive "all" target.
 all: CMakeFiles/mandelbrot.dir/all
-all: CMakeFiles/test_mandelbrot.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -73,7 +72,6 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/mandelbrot.dir/clean
-clean: CMakeFiles/test_mandelbrot.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -101,32 +99,6 @@ mandelbrot: CMakeFiles/mandelbrot.dir/rule
 CMakeFiles/mandelbrot.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mandelbrot.dir/build.make CMakeFiles/mandelbrot.dir/clean
 .PHONY : CMakeFiles/mandelbrot.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/test_mandelbrot.dir
-
-# All Build rule for target.
-CMakeFiles/test_mandelbrot.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles --progress-num=4,5,6 "Built target test_mandelbrot"
-.PHONY : CMakeFiles/test_mandelbrot.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/test_mandelbrot.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles 3
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_mandelbrot.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles 0
-.PHONY : CMakeFiles/test_mandelbrot.dir/rule
-
-# Convenience name for target.
-test_mandelbrot: CMakeFiles/test_mandelbrot.dir/rule
-.PHONY : test_mandelbrot
-
-# clean rule for target.
-CMakeFiles/test_mandelbrot.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mandelbrot.dir/build.make CMakeFiles/test_mandelbrot.dir/clean
-.PHONY : CMakeFiles/test_mandelbrot.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

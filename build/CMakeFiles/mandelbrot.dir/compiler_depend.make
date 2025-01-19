@@ -319,8 +319,12 @@ CMakeFiles/mandelbrot.dir/src/main.cpp.o: /home/mario/Meins/Programmieren/c++/Ma
   /usr/include/opencv4/opencv2/video/background_segm.hpp \
   /usr/include/opencv4/opencv2/video/tracking.hpp \
   /usr/include/opencv4/opencv2/videoio.hpp \
+  /usr/include/png.h \
+  /usr/include/pngconf.h \
+  /usr/include/pnglibconf.h \
   /usr/include/pthread.h \
   /usr/include/sched.h \
+  /usr/include/setjmp.h \
   /usr/include/stdc-predef.h \
   /usr/include/stdint.h \
   /usr/include/stdio.h \
@@ -864,8 +868,6 @@ CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o: /home/mario/Meins/Programmieren/
 
 /usr/lib/llvm-15/lib/clang/15.0.7/include/mmintrin.h:
 
-/usr/lib/llvm-15/lib/clang/15.0.7/include/__stddef_max_align_t.h:
-
 /usr/include/x86_64-linux-gnu/sys/types.h:
 
 /usr/include/x86_64-linux-gnu/sys/single_threaded.h:
@@ -962,11 +964,17 @@ CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o: /home/mario/Meins/Programmieren/
 
 /usr/include/stdc-predef.h:
 
+/usr/include/setjmp.h:
+
 /usr/include/wctype.h:
 
 /usr/include/sched.h:
 
 /usr/include/pthread.h:
+
+/usr/lib/llvm-15/lib/clang/15.0.7/include/__stddef_max_align_t.h:
+
+/usr/include/pngconf.h:
 
 /usr/include/opencv4/opencv2/videoio.hpp:
 
@@ -1540,6 +1548,8 @@ CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o: /home/mario/Meins/Programmieren/
 
 /usr/include/c++/13/tr1/ell_integral.tcc:
 
+/usr/include/pnglibconf.h:
+
 /usr/include/c++/13/bits/stl_construct.h:
 
 /usr/include/opencv4/opencv2/core/cvstd_wrapper.hpp:
@@ -1601,6 +1611,8 @@ CMakeFiles/mandelbrot.dir/src/mandelbrot.cpp.o: /home/mario/Meins/Programmieren/
 /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h:
 
 /usr/include/strings.h:
+
+/usr/include/png.h:
 
 /usr/include/c++/13/iomanip:
 

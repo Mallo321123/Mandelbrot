@@ -8,11 +8,63 @@
 
 namespace fs = std::filesystem;
 
+void write_image_chunked(const std::string &filename, int width, int height, int chunk_size, const std::string &temp_dir)
+{
+    FILE *fp = fopen(filename.c_str(), "wb");
+    if (!fp)
+    {
+        std::cerr << "Fehler: Konnte Datei nicht öffnen." << std::endl;
+        return;
+    }
+
+    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    png_infop info = png_create_info_struct(png);
+
+    if (setjmp(png_jmpbuf(png)))
+    {
+        std::cerr << "Fehler beim Schreiben." << std::endl;
+        fclose(fp);
+        png_destroy_write_struct(&png, &info);
+        return;
+    }
+
+    png_init_io(png, fp);
+    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    png_write_info(png, info);
+
+    for (int chunk_idx = 0; chunk_idx < (height + chunk_size - 1) / chunk_size; ++chunk_idx)
+    {
+        std::string chunk_filename = temp_dir + "/chunk_" + std::to_string(chunk_idx) + ".png";
+        cv::Mat chunk = cv::imread(chunk_filename);
+
+        if (chunk.empty())
+        {
+            std::cerr << "Fehler: Konnte Chunk nicht laden: " << chunk_filename << std::endl;
+            continue;
+        }
+
+        // Konvertiere das Chunk-Bild von BGR nach RGB
+        cv::Mat chunk_rgb;
+        cv::cvtColor(chunk, chunk_rgb, cv::COLOR_RGB2BGR);
+
+        // Schreibe die Zeilen dieses Chunks in die PNG-Datei
+        for (int y = 0; y < chunk_rgb.rows; ++y)
+        {
+            png_bytep row = chunk_rgb.ptr<png_byte>(y);
+            png_write_row(png, row);
+        }
+    }
+
+    png_write_end(png, nullptr);
+    fclose(fp);
+    png_destroy_write_struct(&png, &info);
+}
+
 int main(int argc, char **argv)
 {
     // Standardwerte für die Argumente
-    int width = 80000;
-    int height = 60000;
+    int width = 8000;
+    int height = 6000;
     double x_min = -2.0, x_max = 1.0;
     double y_min = -1.5, y_max = 1.5;
     int max_iter = 100;
@@ -92,46 +144,13 @@ int main(int argc, char **argv)
     std::cout << "Generiere Mandelbrot-Menge..." << std::endl;
     generate_mandelbrot_chunked(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, temp_dir);
 
-    std::cout << "Füge Chunks zusammen..." << std::endl;
-    // Erstelle das finale Bild
-    cv::Mat final_image(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+    std::cout << "Füge Chunks zusammen und speichere Bild..." << std::endl;
+    write_image_chunked(filename, width, height, chunk_size, temp_dir);
 
-    // Berechne die Anzahl der Chunks
-    int num_chunks = (height + chunk_size - 1) / chunk_size;
-
-    for (int chunk_idx = 0; chunk_idx < num_chunks; ++chunk_idx)
-    {
-        // Lade den Chunk
-        std::string chunk_filename = temp_dir + "/chunk_" + std::to_string(chunk_idx) + ".png";
-        cv::Mat chunk = cv::imread(chunk_filename);
-
-        if (chunk.empty())
-        {
-            std::cerr << "Fehler: Konnte Chunk nicht laden: " << chunk_filename << std::endl;
-            continue;
-        }
-
-        // Berechne die y-Bereiche des Chunks
-        int y_start = chunk_idx * chunk_size;
-        int y_end = std::min(y_start + chunk.rows, height);
-
-        // Füge den Chunk in das Zielbild ein
-        chunk.copyTo(final_image(cv::Rect(0, y_start, width, y_end - y_start)));
-    }
-
-    // Temporäre Dateien löschen
     fs::remove_all(temp_dir);
 
-    // Timer stoppen
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end_time - start_time;
-
-    // Bild speichern
-    std::cout << "Speichere Bild..." << std::endl;
-    cv::imwrite("mandelbrot_large_parallel.png", final_image);
-    std::cout << "Bild gespeichert als 'mandelbrot_large_parallel.png'." << std::endl;
-
-    // Laufzeit ausgeben
     std::cout << "Das Programm hat " << duration.count() << " Sekunden benötigt." << std::endl;
 
     return 0;

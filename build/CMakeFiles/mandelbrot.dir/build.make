@@ -144,6 +144,7 @@ mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_viz.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_wechat_qrcode.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_xobjdetect.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_xphoto.so.4.6.0
+mandelbrot: /usr/lib/x86_64-linux-gnu/libpng.so
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_highgui.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_datasets.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_plot.so.4.6.0
@@ -163,6 +164,7 @@ mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_flann.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_photo.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_imgproc.so.4.6.0
 mandelbrot: /usr/lib/x86_64-linux-gnu/libopencv_core.so.4.6.0
+mandelbrot: /usr/lib/x86_64-linux-gnu/libz.so
 mandelbrot: CMakeFiles/mandelbrot.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/mario/Meins/Programmieren/c++/Mandelbrot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable mandelbrot"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/mandelbrot.dir/link.txt --verbose=$(VERBOSE)
