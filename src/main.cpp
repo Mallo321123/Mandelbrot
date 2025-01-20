@@ -19,7 +19,7 @@ void chunk_limited(int width, int height, int x_min, int x_max, int y_min, int y
     generate_mandelbrot_limited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, chunk_start, chunk_end, chunk_path, silent);
 }
 
-void chunk_unlimited(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, std::string temp_dir, std::string filename, bool silent, bool delete_cache)
+void chunk_unlimited(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, std::string temp_dir, std::string filename, bool silent, bool delete_cache, int threads)
 {
     std::cout << "Dateiname: " << filename << std::endl;
 
@@ -30,7 +30,7 @@ void chunk_unlimited(int width, int height, int x_min, int x_max, int y_min, int
     generate_mandelbrot_chunked(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, temp_dir, silent);
 
     std::cout << "Füge Chunks zusammen und speichere Bild..." << std::endl;
-    write_image_chunked(filename, width, height, chunk_size, temp_dir);
+    write_image_chunked(filename, width, height, chunk_size, temp_dir, threads);
 
     if (delete_cache)
     {
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         std::cout << "Anzahl der Worker: " << nw << std::endl;
     };
 
-    int width = 8000, height = 6000, max_iter = 100, chunk_size = 100, num_workers = 3;
+    int width = 2800, height = 1600, max_iter = 100, chunk_size = 100, num_workers = 3;
     double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
     std::string filename = "mandelbrot.png", chunk_path = "chunks";
     int chunk_start = -1, chunk_end = -1, intervall = -1, offset = 0;
@@ -149,8 +149,8 @@ int main(int argc, char **argv)
                 << "Verwendung: " << argv[0] << " [OPTIONEN]\n"
                 << "  --help, -h         Zeige diese Hilfe an\n"
                 << "  --silent, -s       Keine Fortschrittsausgabe\n"
-                << "  --width, -w N      Breite (Standard: 8000)\n"
-                << "  --height, -h N     Höhe (Standard: 6000)\n"
+                << "  --width, -w N      Breite (Standard: 2800)\n"
+                << "  --height, -h N     Höhe (Standard: 1600)\n"
                 << "  --x_min N          Start des x-Bereichs (Standard: -2.0)\n"
                 << "  --x_max N          Ende des x-Bereichs (Standard: 1.0)\n"
                 << "  --y_min N          Start des y-Bereichs (Standard: -1.5)\n"
@@ -210,13 +210,13 @@ int main(int argc, char **argv)
         std::cout << "Bildgröße: " << width << "x" << height << std::endl;
         std::cout << "Chunk-Größe: " << chunk_size << std::endl;
         std::cout << "Füge Chunks zusammen und speichere Bild..." << std::endl;
-        write_image_chunked(filename, width, height, chunk_size, chunk_path);
+        write_image_chunked(filename, width, height, chunk_size, chunk_path, num_workers);
     }
     else
     {
         printParams(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers);
         chunk_unlimited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers,
-                        chunk_path, filename, silent, delete_cache);
+                        chunk_path, filename, silent, delete_cache, num_workers);
     }
 
     auto end_time = std::chrono::high_resolution_clock::now();

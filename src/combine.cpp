@@ -64,10 +64,9 @@ public:
     }
 };
 
-void write_image_chunked(const std::string &filename, int width, int height, int chunk_size, const std::string &temp_dir)
+void write_image_chunked(const std::string &filename, int width, int height, int chunk_size, const std::string &temp_dir, int threads)
 {
     const int total_chunks = (height + chunk_size - 1) / chunk_size;
-    const int max_threads = std::min(2u, std::thread::hardware_concurrency());
     const int chunks_per_temp = 10;
 
     struct TempFileInfo
@@ -129,7 +128,7 @@ void write_image_chunked(const std::string &filename, int width, int height, int
 
     // Parallele Verarbeitung
     {
-        ThreadPool pool(max_threads);
+        ThreadPool pool(threads);
         std::vector<std::future<void>> futures;
 
         for (int i = 0; i < total_chunks; i += chunks_per_temp)
