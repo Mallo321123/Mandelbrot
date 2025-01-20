@@ -1,7 +1,6 @@
 import paramiko
-from scp import SCPClient
+from scp import SCPClient  # type: ignore
 from concurrent.futures import ThreadPoolExecutor
-import time
 
 def create_ssh_client(hostname, username, key_filename):
     ssh = paramiko.SSHClient()

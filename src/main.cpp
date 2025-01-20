@@ -115,101 +115,98 @@ int main(int argc, char **argv)
     int offset = 0;
 
     // Überprüfen, ob Argumente übergeben wurden
+    // Kleine Helferfunktionen, um Duplikate zu vermeiden
+    auto nextIntArg = [&](int &i)
+    {
+        if (++i >= argc)
+        {
+            std::cerr << "Fehler: fehlender numerischer Wert für " << argv[i - 1] << std::endl;
+            std::exit(1);
+        }
+        return std::stoi(argv[i]);
+    };
+
+    auto nextDoubleArg = [&](int &i)
+    {
+        if (++i >= argc)
+        {
+            std::cerr << "Fehler: fehlender numerischer Wert für " << argv[i - 1] << std::endl;
+            std::exit(1);
+        }
+        return std::stod(argv[i]);
+    };
+
     if (argc > 1)
     {
-        // Argumente einlesen
         for (int i = 1; i < argc; ++i)
         {
             std::string arg = argv[i];
-
-            if ((arg == "--width" || arg == "-w") && i + 1 < argc)
+            if ((arg == "--width" || arg == "-w"))
+                width = nextIntArg(i);
+            else if ((arg == "--height" || arg == "-h"))
+                height = nextIntArg(i);
+            else if (arg == "--x_min")
+                x_min = nextDoubleArg(i);
+            else if (arg == "--x_max")
+                x_max = nextDoubleArg(i);
+            else if (arg == "--y_min")
+                y_min = nextDoubleArg(i);
+            else if (arg == "--y_max")
+                y_max = nextDoubleArg(i);
+            else if (arg == "--max_iter")
+                max_iter = nextIntArg(i);
+            else if (arg == "--chunk_size")
+                chunk_size = nextIntArg(i);
+            else if (arg == "--num_workers")
+                num_workers = nextIntArg(i);
+            else if ((arg == "--filename"))
             {
-                width = std::stoi(argv[++i]);
+                if (++i >= argc)
+                {
+                    std::cerr << "Fehler: fehlender Wert für --filename" << std::endl;
+                    std::exit(1);
+                }
+                filename = argv[i];
             }
-            else if ((arg == "--height" || arg == "-h") && i + 1 < argc)
+            else if (arg == "--chunk_start")
+                chunk_start = nextIntArg(i);
+            else if (arg == "--chunk_end")
+                chunk_end = nextIntArg(i);
+            else if ((arg == "--out_path" || arg == "-o"))
             {
-                height = std::stoi(argv[++i]);
+                if (++i >= argc)
+                {
+                    std::cerr << "Fehler: fehlender Wert für --out_path" << std::endl;
+                    std::exit(1);
+                }
+                out_path = argv[i];
             }
-            else if (arg == "--x_min" && i + 1 < argc)
-            {
-                x_min = std::stod(argv[++i]);
-            }
-            else if (arg == "--x_max" && i + 1 < argc)
-            {
-                x_max = std::stod(argv[++i]);
-            }
-            else if (arg == "--y_min" && i + 1 < argc)
-            {
-                y_min = std::stod(argv[++i]);
-            }
-            else if (arg == "--y_max" && i + 1 < argc)
-            {
-                y_max = std::stod(argv[++i]);
-            }
-            else if (arg == "--max_iter" && i + 1 < argc)
-            {
-                max_iter = std::stoi(argv[++i]);
-            }
-            else if (arg == "--chunk_size" && i + 1 < argc)
-            {
-                chunk_size = std::stoi(argv[++i]);
-            }
-            else if (arg == "--num_workers" && i + 1 < argc)
-            {
-                num_workers = std::stoi(argv[++i]);
-            }
-            else if (arg == "--filename" && i + 1 < argc)
-            {
-                filename = std::string(argv[++i]);
-            }
-            else if (arg == "--chunk_start" && i + 1 < argc)
-            {
-                chunk_start = std::stoi(argv[++i]);
-            }
-            else if (arg == "--chunk_end" && i + 1 < argc)
-            {
-                chunk_end = std::stoi(argv[++i]);
-            }
-            else if ((arg == "--out_path" || arg == "-o") && i + 1 < argc)
-            {
-                out_path = std::string(argv[++i]);
-            }
-            else if (arg == "--silent" || arg == "-s")
-            {
+            else if ((arg == "--silent" || arg == "-s"))
                 silent = true;
-            }
-            else if (arg == "--intervall" && i + 1 < argc)
-            {
-                intervall = std::stoi(argv[++i]);
-            }
-            else if (arg == "--offset" && i + 1 < argc)
-            {
-                offset = std::stoi(argv[++i]);
-            }
+            else if (arg == "--intervall")
+                intervall = nextIntArg(i);
+            else if (arg == "--offset")
+                offset = nextIntArg(i);
             else if (arg == "--help")
             {
-                std::cout << "Verwendung: " << argv[0] << " [OPTIONEN]" << std::endl;
-                std::cout << "Optionen:" << std::endl;
-                std::cout << "  --help, -h         Zeige diese Hilfe an" << std::endl;
-                std::cout << "  --silent, -s       Keine Vortschritts Ausgabe auf der Konsole" << std::endl;
-                std::cout << "  Bild Optionen:" << std::endl;
-                std::cout << "    --width N, -w N           Breite des Bildes (Standard: 8000) (Es sollte das seitenverhältniss eingehalten werden)" << std::endl;
-                std::cout << "    --height N, -h N          Höhe des Bildes (Standard: 6000)" << std::endl;
-                std::cout << "    --x_min N                 Minimum des x-Bereichs (Standard: -2.0)" << std::endl;
-                std::cout << "    --x_max N                 Maximum des x-Bereichs (Standard: 1.0)" << std::endl;
-                std::cout << "    --y_min N                 Minimum des y-Bereichs (Standard: -1.5)" << std::endl;
-                std::cout << "    --y_max N                 Maximum des y-Bereichs (Standard: 1.5)" << std::endl;
-                std::cout << "    --max_iter N              Maximale Anzahl an Iterationen (Standard: 100)" << std::endl;
-                std::cout << "  Compute optionen:" << std::endl;
-                std::cout << "    --chunk_size N            Größe der Chunks (Standard: 100)" << std::endl;
-                std::cout << "    --num_workers N           Anzahl der Worker (Standard: 3)" << std::endl;
-                std::cout << "    --filename STR, -f STR    Dateiname des Bildes (Standard: mandelbrot.png)" << std::endl;
-                std::cout << "  Sonstige Optionen:" << std::endl;
-                std::cout << "    --intervall N             Intervall der Chunks (Standard: Off)" << std::endl;
-                std::cout << "    --offset N                Offset der Chunks (Standard: 0)" << std::endl;
-                std::cout << "    --chunk_start N           Startindex des Chunks (Standard: Off)" << std::endl;
-                std::cout << "    --chunk_end N             Endindex des Chunks (Standard: Off)" << std::endl;
-                std::cout << "    --out_path STR, -o STR    Pfad zum Speichern der Chunks (Standard: chunks)" << std::endl;
+                std::cout << "Verwendung: " << argv[0] << " [OPTIONEN]\n"
+                          << "  --help, -h         Zeige diese Hilfe an\n"
+                          << "  --silent, -s       Keine Fortschrittsausgabe\n"
+                          << "  --width, -w N      Breite (Standard: 8000)\n"
+                          << "  --height, -h N     Höhe (Standard: 6000)\n"
+                          << "  --x_min N          Start des x-Bereichs (Standard: -2.0)\n"
+                          << "  --x_max N          Ende des x-Bereichs (Standard: 1.0)\n"
+                          << "  --y_min N          Start des y-Bereichs (Standard: -1.5)\n"
+                          << "  --y_max N          Ende des y-Bereichs (Standard: 1.5)\n"
+                          << "  --max_iter N       Iterationen (Standard: 100)\n"
+                          << "  --chunk_size N     Chunk-Größe (Standard: 100)\n"
+                          << "  --num_workers N    Worker (Standard: 3)\n"
+                          << "  --filename STR     Ausgabedatei (Standard: mandelbrot.png)\n"
+                          << "  --intervall N      Chunk-Intervall (Standard: aus)\n"
+                          << "  --offset N         Chunk-Offset (Standard: 0)\n"
+                          << "  --chunk_start N    Startindex (Standard: aus)\n"
+                          << "  --chunk_end N      Endindex (Standard: aus)\n"
+                          << "  --out_path, -o STR Speicherpfad für Chunks (Standard: chunks)\n";
                 return 0;
             }
             else
