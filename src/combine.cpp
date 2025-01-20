@@ -80,8 +80,6 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     
     auto process_chunk_range = [&](int start, int end, int temp_index) {
         std::string temp_filename = temp_dir + "/temp_" + std::to_string(temp_index) + ".tmp";
-        log("Verarbeite Chunk-Gruppe " + std::to_string(temp_index) + " (" + 
-            std::to_string(start) + " bis " + std::to_string(end-1) + ")\n");
 
         FILE* temp_fp = fopen(temp_filename.c_str(), "wb");
         if (!temp_fp) {

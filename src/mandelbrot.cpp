@@ -75,6 +75,10 @@ inline int mandelbrot(double cr, double ci, int max_iter) {
 
 void compute_chunk(int y_start, int y_end, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter, cv::Mat &image, int chunk_idx, int num_chunks, bool silent)
 {
+    int total_rows = y_end - y_start;
+    int processed_rows = 0;
+    auto last_update = std::chrono::steady_clock::now();
+
     for (int y = y_start; y < y_end; ++y)
     {
         uchar* rowPtr = image.ptr<uchar>(y - y_start);
@@ -90,6 +94,18 @@ void compute_chunk(int y_start, int y_end, int width, int height, double x_min, 
             rowPtr[x * 3 + 1] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.33) * 3.0)); // Grün
             rowPtr[x * 3 + 0] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.66) * 3.0)); // Blau
         }
+
+        processed_rows++;
+        auto now = std::chrono::steady_clock::now();
+        if (!silent && now - last_update > std::chrono::milliseconds(500)) {
+            std::lock_guard<std::mutex> lock(progress_mutex);
+            std::cout << "\rChunk " << chunk_idx << "/" << num_chunks 
+                     << " - Zeilen: " << processed_rows << "/" << total_rows 
+                     << " (" << (processed_rows * 100 / total_rows) << "%)"
+                     << " | Gesamt: " << completed_chunks << "/" << num_chunks 
+                     << " Chunks" << std::flush;
+            last_update = now;
+        }
     }
 
     {
@@ -97,7 +113,10 @@ void compute_chunk(int y_start, int y_end, int width, int height, double x_min, 
         completed_chunks++;
         if (!silent)
         {
-            std::cout << "Fortschritt: " << completed_chunks << "/" << num_chunks << " Chunks abgeschlossen." << std::endl;
+            std::cout << "\rChunk " << chunk_idx << " abgeschlossen. "
+                     << "Gesamt: " << completed_chunks << "/" << num_chunks 
+                     << " Chunks (" << (completed_chunks * 100 / num_chunks) << "%)" 
+                     << std::endl;
         }
     }
 }
