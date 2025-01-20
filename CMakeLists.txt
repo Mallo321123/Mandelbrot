@@ -17,3 +17,5 @@ find_package(OpenCV REQUIRED)
 target_link_libraries(mandelbrot ${OpenCV_LIBS})
 find_package(PNG REQUIRED)
 target_link_libraries(mandelbrot PNG::PNG)
+
+target_compile_options(mandelbrot PRIVATE -msse2)

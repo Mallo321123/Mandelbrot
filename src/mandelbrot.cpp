@@ -12,8 +12,10 @@ std::mutex file_mutex;
 std::mutex progress_mutex;
 std::atomic<int> completed_chunks(0);
 
-inline int mandelbrot(double cr, double ci, int max_iter)
-{
+inline int mandelbrot(double cr, double ci, int max_iter) {
+    /*
+    This function basicly does this:
+
     double zr = 0.0, zi = 0.0;
     for (int n = 0; n < max_iter; ++n)
     {
@@ -26,7 +28,49 @@ inline int mandelbrot(double cr, double ci, int max_iter)
         zi = 2.0 * zr * zi + ci;
         zr = zr2 - zi2 + cr;
     }
-    return max_iter;
+    
+    */
+
+    int result;
+    const double four = 4.0;
+    __asm__ volatile(
+        "movsd %1, %%xmm0\n\t"          // cr -> xmm0
+        "movsd %2, %%xmm1\n\t"          // ci -> xmm1
+        "xorpd %%xmm2, %%xmm2\n\t"      // zr = 0
+        "xorpd %%xmm3, %%xmm3\n\t"      // zi = 0
+        "movsd %3, %%xmm7\n\t"          // Grenzwert 4.0
+        "xor %%ecx, %%ecx\n\t"          // Iterator n = 0
+        
+        "1:\n\t"                        // Schleifenstart
+        "movapd %%xmm2, %%xmm4\n\t"     // zr -> xmm4
+        "movapd %%xmm3, %%xmm5\n\t"     // zi -> xmm5
+        "mulsd %%xmm4, %%xmm4\n\t"      // zr^2
+        "mulsd %%xmm5, %%xmm5\n\t"      // zi^2
+        "movapd %%xmm4, %%xmm6\n\t"
+        "addsd %%xmm5, %%xmm6\n\t"      // zr^2 + zi^2
+        "comisd %%xmm7, %%xmm6\n\t"     // vergleiche mit 4.0
+        "ja 2f\n\t"                     // wenn > 4.0, springe zu 2
+        
+        "movapd %%xmm2, %%xmm6\n\t"
+        "mulsd %%xmm3, %%xmm6\n\t"      // zr * zi
+        "addsd %%xmm6, %%xmm6\n\t"      // 2 * zr * zi
+        "addsd %%xmm1, %%xmm6\n\t"      // + ci
+        "subsd %%xmm5, %%xmm4\n\t"      // zr^2 - zi^2
+        "addsd %%xmm0, %%xmm4\n\t"      // + cr
+        "movapd %%xmm4, %%xmm2\n\t"     // neues zr
+        "movapd %%xmm6, %%xmm3\n\t"     // neues zi
+        
+        "inc %%ecx\n\t"
+        "cmp %4, %%ecx\n\t"
+        "jl 1b\n\t"
+        
+        "2:\n\t"
+        "mov %%ecx, %0\n\t"             // Ergebnis speichern
+        : "=r" (result)
+        : "m" (cr), "m" (ci), "m" (four), "r" (max_iter)
+        : "ecx", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
+    );
+    return result;
 }
 
 void compute_chunk(int y_start, int y_end, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter, cv::Mat &image, int chunk_idx, int num_chunks, bool silent)
