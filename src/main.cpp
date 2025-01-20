@@ -29,33 +29,33 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     }
 
     png_init_io(png, fp);
-    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    // Schreibe BGR-Daten direkt als RGB
+    png_set_bgr(png);
+
     png_write_info(png, info);
 
-    for (int chunk_idx = 0; chunk_idx < (height + chunk_size - 1) / chunk_size; ++chunk_idx)
+    int total_chunks = (height + chunk_size - 1) / chunk_size;
+    for (int chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx)
     {
         std::string chunk_filename = temp_dir + "/chunk_" + std::to_string(chunk_idx) + ".png";
-        cv::Mat chunk = cv::imread(chunk_filename);
+        cv::Mat chunkBGR = cv::imread(chunk_filename, cv::IMREAD_COLOR);
 
-        if (chunk.empty())
+        if (chunkBGR.empty())
         {
             std::cerr << "Fehler: Konnte Chunk nicht laden: " << chunk_filename << std::endl;
             continue;
         }
 
-        // Konvertiere das Chunk-Bild von BGR nach RGB
-        cv::Mat chunk_rgb;
-        cv::cvtColor(chunk, chunk_rgb, cv::COLOR_RGB2BGR);
-
-        // Schreibe die Zeilen dieses Chunks in die PNG-Datei
-        for (int y = 0; y < chunk_rgb.rows; ++y)
+        for (int y = 0; y < chunkBGR.rows; ++y)
         {
-            png_bytep row = chunk_rgb.ptr<png_byte>(y);
+            png_bytep row = chunkBGR.ptr<png_byte>(y);
             png_write_row(png, row);
         }
     }
 
-    png_write_end(png, nullptr);
+    png_write_end(png, info);
     fclose(fp);
     png_destroy_write_struct(&png, &info);
 }
