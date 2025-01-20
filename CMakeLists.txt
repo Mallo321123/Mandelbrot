@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(mandelbrot
     src/main.cpp
     src/mandelbrot.cpp
+    src/combine.cpp
 )
 
 target_include_directories(mandelbrot PRIVATE include)

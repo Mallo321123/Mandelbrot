@@ -5,60 +5,9 @@
 #include <filesystem>
 #include <png.h>
 #include "mandelbrot.hpp"
+#include "combine.hpp"
 
 namespace fs = std::filesystem;
-
-void write_image_chunked(const std::string &filename, int width, int height, int chunk_size, const std::string &temp_dir)
-{
-    FILE *fp = fopen(filename.c_str(), "wb");
-    if (!fp)
-    {
-        std::cerr << "Fehler: Konnte Datei nicht öffnen." << std::endl;
-        return;
-    }
-
-    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    png_infop info = png_create_info_struct(png);
-
-    if (setjmp(png_jmpbuf(png)))
-    {
-        std::cerr << "Fehler beim Schreiben." << std::endl;
-        fclose(fp);
-        png_destroy_write_struct(&png, &info);
-        return;
-    }
-
-    png_init_io(png, fp);
-    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-    // Schreibe BGR-Daten direkt als RGB
-    png_set_bgr(png);
-
-    png_write_info(png, info);
-
-    int total_chunks = (height + chunk_size - 1) / chunk_size;
-    for (int chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx)
-    {
-        std::string chunk_filename = temp_dir + "/chunk_" + std::to_string(chunk_idx) + ".png";
-        cv::Mat chunkBGR = cv::imread(chunk_filename, cv::IMREAD_COLOR);
-
-        if (chunkBGR.empty())
-        {
-            std::cerr << "Fehler: Konnte Chunk nicht laden: " << chunk_filename << std::endl;
-            continue;
-        }
-
-        for (int y = 0; y < chunkBGR.rows; ++y)
-        {
-            png_bytep row = chunkBGR.ptr<png_byte>(y);
-            png_write_row(png, row);
-        }
-    }
-
-    png_write_end(png, info);
-    fclose(fp);
-    png_destroy_write_struct(&png, &info);
-}
 
 void chunk_limited(int width, int height, int x_min, int x_max, int y_min, int y_max, int max_iter, int chunk_size, int num_workers, int chunk_start, int chunk_end, std::string chunk_path, bool silent)
 {
@@ -196,6 +145,7 @@ int main(int argc, char **argv)
         else if (arg == "--help")
         {
             std::cout
+                << "Github: https://github.com/Mallo321123/Mandelbrot\n"
                 << "Verwendung: " << argv[0] << " [OPTIONEN]\n"
                 << "  --help, -h         Zeige diese Hilfe an\n"
                 << "  --silent, -s       Keine Fortschrittsausgabe\n"
