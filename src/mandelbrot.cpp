@@ -12,16 +12,19 @@ std::mutex file_mutex;
 std::mutex progress_mutex;
 std::atomic<int> completed_chunks(0);
 
-int mandelbrot(std::complex<double> c, int max_iter)
+inline int mandelbrot(double cr, double ci, int max_iter)
 {
-    std::complex<double> z = 0;
+    double zr = 0.0, zi = 0.0;
     for (int n = 0; n < max_iter; ++n)
     {
-        if (std::abs(z) > 2.0)
+        double zr2 = zr * zr;
+        double zi2 = zi * zi;
+        if (zr2 + zi2 > 4.0)
         {
             return n;
         }
-        z = z * z + c;
+        zi = 2.0 * zr * zi + ci;
+        zr = zr2 - zi2 + cr;
     }
     return max_iter;
 }
@@ -30,27 +33,18 @@ void compute_chunk(int y_start, int y_end, int width, int height, double x_min, 
 {
     for (int y = y_start; y < y_end; ++y)
     {
+        uchar* rowPtr = image.ptr<uchar>(y - y_start);
+        double imagY = y_min + (double(y) / height) * (y_max - y_min);
         for (int x = 0; x < width; ++x)
         {
-            double real = x_min + (x / (double)width) * (x_max - x_min);
-            double imag = y_min + (y / (double)height) * (y_max - y_min);
-            std::complex<double> c(real, imag);
-            int value = mandelbrot(c, max_iter);
-
-            // Normalisieren
+            double realX = x_min + (double(x) / width) * (x_max - x_min);
+            int value = mandelbrot(realX, imagY, max_iter);
             double normalized = (double)value / max_iter;
 
-            // "Hot"-Colormap - Umrechnung der Farbwerte
-            cv::Vec3b color;
-            // Rotkanal (höherer Wert für größere Werte)
-            color[2] = static_cast<uchar>(255 * std::min(1.0, normalized * 3.0));
-            // Grüner Kanal (mittelmäßig bei höheren Werten)
-            color[1] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.33) * 3.0));
-            // Blaukanal (gering bei höheren Werten)
-            color[0] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.66) * 3.0));
-
-            // Relativer y-Index für die Bildmatrix
-            image.at<cv::Vec3b>(y - y_start, x) = color;
+            // "Hot"-Colormap
+            rowPtr[x * 3 + 2] = static_cast<uchar>(255 * std::min(1.0, normalized * 3.0));                  // Rot
+            rowPtr[x * 3 + 1] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.33) * 3.0)); // Grün
+            rowPtr[x * 3 + 0] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.66) * 3.0)); // Blau
         }
     }
 
