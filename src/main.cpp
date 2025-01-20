@@ -102,26 +102,21 @@ void chunk_intervall(int width, int height, int x_min, int x_max, int y_min, int
 
 int main(int argc, char **argv)
 {
-    // Standardwerte für die Argumente
-    int width = 8000;
-    int height = 6000;
-    double x_min = -2.0, x_max = 1.0;
-    double y_min = -1.5, y_max = 1.5;
-    int max_iter = 100;
-    int chunk_size = 100;
-    int num_workers = 3;
-    std::string filename = "mandelbrot.png";
-    int chunk_start = -1;
-    int chunk_end = -1;
-    std::string chunk_path = "chunks";
-    bool silent = false;
-    int intervall = -1;
-    int offset = 0;
-    bool fusion = false;
-    bool delete_cache = false;
+    auto printParams = [&](int w, int h, double xmin, double xmax, double ymin, double ymax, int mi, int cs, int nw)
+    {
+        std::cout << "Bildgröße: " << w << "x" << h << std::endl;
+        std::cout << "Mandelbrot-Bereich: [" << xmin << ", " << xmax << "], [" << ymin << ", " << ymax << "]" << std::endl;
+        std::cout << "Maximale Iterationen: " << mi << std::endl;
+        std::cout << "Chunk-Größe: " << cs << std::endl;
+        std::cout << "Anzahl der Worker: " << nw << std::endl;
+    };
 
-    // Überprüfen, ob Argumente übergeben wurden
-    // Kleine Helferfunktionen, um Duplikate zu vermeiden
+    int width = 8000, height = 6000, max_iter = 100, chunk_size = 100, num_workers = 3;
+    double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
+    std::string filename = "mandelbrot.png", chunk_path = "chunks";
+    int chunk_start = -1, chunk_end = -1, intervall = -1, offset = 0;
+    bool silent = false, fusion = false, delete_cache = false;
+
     auto nextIntArg = [&](int &i)
     {
         if (++i >= argc)
@@ -142,93 +137,91 @@ int main(int argc, char **argv)
         return std::stod(argv[i]);
     };
 
-    if (argc > 1)
+    for (int i = 1; i < argc; ++i)
     {
-        for (int i = 1; i < argc; ++i)
+        std::string arg = argv[i];
+        if ((arg == "--width" || arg == "-w"))
+            width = nextIntArg(i);
+        else if ((arg == "--height" || arg == "-h"))
+            height = nextIntArg(i);
+        else if (arg == "--x_min")
+            x_min = nextDoubleArg(i);
+        else if (arg == "--x_max")
+            x_max = nextDoubleArg(i);
+        else if (arg == "--y_min")
+            y_min = nextDoubleArg(i);
+        else if (arg == "--y_max")
+            y_max = nextDoubleArg(i);
+        else if (arg == "--max_iter")
+            max_iter = nextIntArg(i);
+        else if (arg == "--chunk_size")
+            chunk_size = nextIntArg(i);
+        else if ((arg == "--workers") || (arg == "-j"))
+            num_workers = nextIntArg(i);
+        else if (arg == "--filename")
         {
-            std::string arg = argv[i];
-            if ((arg == "--width" || arg == "-w"))
-                width = nextIntArg(i);
-            else if ((arg == "--height" || arg == "-h"))
-                height = nextIntArg(i);
-            else if (arg == "--x_min")
-                x_min = nextDoubleArg(i);
-            else if (arg == "--x_max")
-                x_max = nextDoubleArg(i);
-            else if (arg == "--y_min")
-                y_min = nextDoubleArg(i);
-            else if (arg == "--y_max")
-                y_max = nextDoubleArg(i);
-            else if (arg == "--max_iter")
-                max_iter = nextIntArg(i);
-            else if (arg == "--chunk_size")
-                chunk_size = nextIntArg(i);
-            else if ((arg == "--workers") || (arg == "-j"))
-                num_workers = nextIntArg(i);
-            else if ((arg == "--filename"))
+            if (++i >= argc)
             {
-                if (++i >= argc)
-                {
-                    std::cerr << "Fehler: fehlender Wert für --filename" << std::endl;
-                    std::exit(1);
-                }
-                filename = argv[i];
+                std::cerr << "Fehler: fehlender Wert für --filename" << std::endl;
+                std::exit(1);
             }
-            else if (arg == "--chunk_start")
-                chunk_start = nextIntArg(i);
-            else if (arg == "--chunk_end")
-                chunk_end = nextIntArg(i);
-            else if ((arg == "--chunk_path" || arg == "-o"))
+            filename = argv[i];
+        }
+        else if (arg == "--chunk_start")
+            chunk_start = nextIntArg(i);
+        else if (arg == "--chunk_end")
+            chunk_end = nextIntArg(i);
+        else if ((arg == "--chunk_path" || arg == "-o"))
+        {
+            if (++i >= argc)
             {
-                if (++i >= argc)
-                {
-                    std::cerr << "Fehler: fehlender Wert für --chunk_path" << std::endl;
-                    std::exit(1);
-                }
-                chunk_path = argv[i];
+                std::cerr << "Fehler: fehlender Wert für --chunk_path" << std::endl;
+                std::exit(1);
             }
-            else if ((arg == "--silent" || arg == "-s"))
-                silent = true;
-            else if (arg == "--fusion")
-                fusion = true;
-            else if ((arg == "--delete") || (arg == "-t"))
-            {
-                delete_cache = true;
-                std::cout << "Lösche temporäre Chunks nach dem Zusammenfügen..." << std::endl;
-            }
-            else if (arg == "--intervall")
-                intervall = nextIntArg(i);
-            else if (arg == "--offset")
-                offset = nextIntArg(i);
-            else if (arg == "--help")
-            {
-                std::cout << "Verwendung: " << argv[0] << " [OPTIONEN]\n"
-                          << "  --help, -h         Zeige diese Hilfe an\n"
-                          << "  --silent, -s       Keine Fortschrittsausgabe\n"
-                          << "  --width, -w N      Breite (Standard: 8000)\n"
-                          << "  --height, -h N     Höhe (Standard: 6000)\n"
-                          << "  --x_min N          Start des x-Bereichs (Standard: -2.0)\n"
-                          << "  --x_max N          Ende des x-Bereichs (Standard: 1.0)\n"
-                          << "  --y_min N          Start des y-Bereichs (Standard: -1.5)\n"
-                          << "  --y_max N          Ende des y-Bereichs (Standard: 1.5)\n"
-                          << "  --max_iter N       Iterationen (Standard: 100)\n"
-                          << "  --chunk_size N     Chunk-Größe (Standard: 100)\n"
-                          << "  --workers N, -j N  Worker (Standard: 3)\n"
-                          << "  --filename STR     Ausgabedatei (Standard: mandelbrot.png)\n"
-                          << "  --intervall N      Chunk-Intervall (Standard: aus)\n"
-                          << "  --offset N         Chunk-Offset (Standard: 0)\n"
-                          << "  --chunk_start N    Startindex (Standard: aus)\n"
-                          << "  --chunk_end N      Endindex (Standard: aus)\n"
-                          << "  --fusion           Füge Chunks zusammen und speichere Bild\n"
-                          << "  --delete, -t       Lösche temporäre Chunks nach dem Zusammenfügen\n"
-                          << "  --chunk_path, -o STR Speicherpfad für Chunks (Standard: chunks)\n";
-                return 0;
-            }
-            else
-            {
-                std::cerr << "Unbekanntes Argument: " << arg << std::endl;
-                return 1;
-            }
+            chunk_path = argv[i];
+        }
+        else if ((arg == "--silent" || arg == "-s"))
+            silent = true;
+        else if (arg == "--fusion")
+            fusion = true;
+        else if ((arg == "--delete") || (arg == "-t"))
+        {
+            delete_cache = true;
+            std::cout << "Lösche temporäre Chunks nach dem Zusammenfügen..." << std::endl;
+        }
+        else if (arg == "--intervall")
+            intervall = nextIntArg(i);
+        else if (arg == "--offset")
+            offset = nextIntArg(i);
+        else if (arg == "--help")
+        {
+            std::cout
+                << "Verwendung: " << argv[0] << " [OPTIONEN]\n"
+                << "  --help, -h         Zeige diese Hilfe an\n"
+                << "  --silent, -s       Keine Fortschrittsausgabe\n"
+                << "  --width, -w N      Breite (Standard: 8000)\n"
+                << "  --height, -h N     Höhe (Standard: 6000)\n"
+                << "  --x_min N          Start des x-Bereichs (Standard: -2.0)\n"
+                << "  --x_max N          Ende des x-Bereichs (Standard: 1.0)\n"
+                << "  --y_min N          Start des y-Bereichs (Standard: -1.5)\n"
+                << "  --y_max N          Ende des y-Bereichs (Standard: 1.5)\n"
+                << "  --max_iter N       Iterationen (Standard: 100)\n"
+                << "  --chunk_size N     Chunk-Größe (Standard: 100)\n"
+                << "  --workers N, -j N  Worker (Standard: 3)\n"
+                << "  --filename STR     Ausgabedatei (Standard: mandelbrot.png)\n"
+                << "  --intervall N      Chunk-Intervall (Standard: aus)\n"
+                << "  --offset N         Chunk-Offset (Standard: 0)\n"
+                << "  --chunk_start N    Startindex (Standard: aus)\n"
+                << "  --chunk_end N      Endindex (Standard: aus)\n"
+                << "  --fusion           Füge Chunks zusammen und speichere Bild\n"
+                << "  --delete, -t       Lösche temporäre Chunks nach dem Zusammenfügen\n"
+                << "  --chunk_path, -o STR Speicherpfad (Standard: chunks)\n";
+            return 0;
+        }
+        else
+        {
+            std::cerr << "Unbekanntes Argument: " << arg << std::endl;
+            return 1;
         }
     }
 
@@ -236,20 +229,13 @@ int main(int argc, char **argv)
 
     if (chunk_start != -1 && chunk_end != -1)
     {
-        std::cout << "Bildgröße: " << width << "x" << height << std::endl;
-        std::cout << "Mandelbrot-Bereich: [" << x_min << ", " << x_max << "], [" << y_min << ", " << y_max << "]" << std::endl;
-        std::cout << "Maximale Iterationen: " << max_iter << std::endl;
-        std::cout << "Chunk-Größe: " << chunk_size << std::endl;
-        std::cout << "Anzahl der Worker: " << num_workers << std::endl;
-        chunk_limited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, chunk_start, chunk_end, chunk_path, silent);
+        printParams(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers);
+        chunk_limited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size,
+                      num_workers, chunk_start, chunk_end, chunk_path, silent);
     }
     else if (chunk_start != -1 || chunk_end != -1)
     {
-        std::cout << "Bildgröße: " << width << "x" << height << std::endl;
-        std::cout << "Mandelbrot-Bereich: [" << x_min << ", " << x_max << "], [" << y_min << ", " << y_max << "]" << std::endl;
-        std::cout << "Maximale Iterationen: " << max_iter << std::endl;
-        std::cout << "Chunk-Größe: " << chunk_size << std::endl;
-        std::cout << "Anzahl der Worker: " << num_workers << std::endl;
+        printParams(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers);
         std::cerr << "Fehler: chunk_start und chunk_end müssen beide gesetzt sein." << std::endl;
         return 1;
     }
@@ -257,11 +243,7 @@ int main(int argc, char **argv)
     {
         if (intervall <= 0)
         {
-            std::cout << "Bildgröße: " << width << "x" << height << std::endl;
-            std::cout << "Mandelbrot-Bereich: [" << x_min << ", " << x_max << "], [" << y_min << ", " << y_max << "]" << std::endl;
-            std::cout << "Maximale Iterationen: " << max_iter << std::endl;
-            std::cout << "Chunk-Größe: " << chunk_size << std::endl;
-            std::cout << "Anzahl der Worker: " << num_workers << std::endl;
+            printParams(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers);
             std::cerr << "Fehler: Das Intervall muss größer als 0 sein." << std::endl;
             return 1;
         }
@@ -269,11 +251,11 @@ int main(int argc, char **argv)
         {
             std::cout << "Intervall: " << intervall << std::endl;
             std::cout << "Offset: " << offset << std::endl;
-
-            chunk_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, intervall, chunk_path, silent, offset);
+            chunk_intervall(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size,
+                            num_workers, intervall, chunk_path, silent, offset);
         }
     }
-    else if (fusion == true)
+    else if (fusion)
     {
         std::cout << "Bildgröße: " << width << "x" << height << std::endl;
         std::cout << "Chunk-Größe: " << chunk_size << std::endl;
@@ -282,17 +264,15 @@ int main(int argc, char **argv)
     }
     else
     {
-        std::cout << "Bildgröße: " << width << "x" << height << std::endl;
-        std::cout << "Mandelbrot-Bereich: [" << x_min << ", " << x_max << "], [" << y_min << ", " << y_max << "]" << std::endl;
-        std::cout << "Maximale Iterationen: " << max_iter << std::endl;
-        std::cout << "Chunk-Größe: " << chunk_size << std::endl;
-        std::cout << "Anzahl der Worker: " << num_workers << std::endl;
-        chunk_unlimited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers, chunk_path, filename, silent, delete_cache);
+        printParams(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers);
+        chunk_unlimited(width, height, x_min, x_max, y_min, y_max, max_iter, chunk_size, num_workers,
+                        chunk_path, filename, silent, delete_cache);
     }
 
     auto end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end_time - start_time;
-    std::cout << "Das Programm hat " << duration.count() << " Sekunden benötigt." << std::endl;
+    std::cout << "Das Programm hat "
+              << std::chrono::duration<double>(end_time - start_time).count()
+              << " Sekunden benötigt." << std::endl;
 
     return 0;
 }
