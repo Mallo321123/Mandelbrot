@@ -68,12 +68,18 @@ void write_image_chunked(const std::string &filename, int width, int height, int
 {
     const int total_chunks = (height + chunk_size - 1) / chunk_size;
     const int max_threads = std::min(2u, std::thread::hardware_concurrency());
-    const int chunks_per_temp = 10; // Kleinere Gruppen für weniger Speicherverbrauch
+    const int chunks_per_temp = 10;
 
-    std::vector<std::string> temp_files;
+    struct TempFileInfo
+    {
+        std::string filename;
+        int start_chunk;
+        int num_chunks;
+        int start_row;
+    };
+    std::vector<TempFileInfo> temp_files;
     std::mutex temp_files_mutex, cout_mutex;
     std::atomic<int> processed_chunks{0};
-    std::atomic<int> written_temp_files{0};
 
     auto log = [&](const std::string &message)
     {
@@ -84,9 +90,11 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     log("Starte Verarbeitung...\n");
     log("Gesamtanzahl Chunks: " + std::to_string(total_chunks) + "\n");
 
-    auto process_chunk_range = [&](int start, int end, int temp_index)
+    auto process_chunk_range = [&](int start_chunk, int end_chunk, int temp_index)
     {
         std::string temp_filename = temp_dir + "/temp_" + std::to_string(temp_index) + ".tmp";
+        int start_row = start_chunk * chunk_size;
+        int total_rows = 0;
 
         FILE *temp_fp = fopen(temp_filename.c_str(), "wb");
         if (!temp_fp)
@@ -95,40 +103,27 @@ void write_image_chunked(const std::string &filename, int width, int height, int
             return;
         }
 
-        std::vector<uint8_t> row_buffer(width * 3);
-        for (int i = start; i < end && i < total_chunks; ++i)
+        for (int i = start_chunk; i < end_chunk && i < total_chunks; ++i)
         {
             std::string chunk_file = temp_dir + "/chunk_" + std::to_string(i) + ".png";
             cv::Mat chunk = cv::imread(chunk_file, cv::IMREAD_COLOR);
 
             if (!chunk.empty())
             {
-                for (int y = 0; y < chunk.rows; ++y)
-                {
-                    memcpy(row_buffer.data(), chunk.ptr(y), width * 3);
-                    fwrite(row_buffer.data(), 1, width * 3, temp_fp);
-                }
-                chunk.release(); // Sofortiges Freigeben des Speichers
+                fwrite(chunk.data, 1, chunk.step * chunk.rows, temp_fp);
+                total_rows += chunk.rows;
+                chunk.release();
                 processed_chunks++;
-
-                if (processed_chunks % 5 == 0)
-                {
-                    log("\rVerarbeitet: " + std::to_string(processed_chunks) + "/" +
-                        std::to_string(total_chunks) + " (" +
-                        std::to_string(processed_chunks * 100 / total_chunks) + "%)\n");
-                }
-            }
-            else
-            {
-                log("Warnung: Konnte Chunk nicht laden: " + std::to_string(i) + "\n");
             }
         }
 
         fclose(temp_fp);
         {
             std::lock_guard<std::mutex> lock(temp_files_mutex);
-            temp_files.push_back(temp_filename);
-            written_temp_files++;
+            temp_files.push_back({temp_filename,
+                                  start_chunk,
+                                  end_chunk - start_chunk,
+                                  start_row});
         }
     };
 
@@ -136,14 +131,14 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     {
         ThreadPool pool(max_threads);
         std::vector<std::future<void>> futures;
-        futures.reserve((total_chunks + chunks_per_temp - 1) / chunks_per_temp);
-
-        log("Starte " + std::to_string(max_threads) + " Worker-Threads...\n");
 
         for (int i = 0; i < total_chunks; i += chunks_per_temp)
         {
             futures.push_back(pool.enqueue([=, &process_chunk_range]()
-                                           { process_chunk_range(i, std::min(i + chunks_per_temp, total_chunks), i / chunks_per_temp); }));
+                                           { process_chunk_range(
+                                                 i,
+                                                 std::min(i + chunks_per_temp, total_chunks),
+                                                 i / chunks_per_temp); }));
         }
 
         for (auto &future : futures)
@@ -152,9 +147,16 @@ void write_image_chunked(const std::string &filename, int width, int height, int
         }
     }
 
+    // Sortiere nach Startzeile
+    std::sort(temp_files.begin(), temp_files.end(),
+              [](const TempFileInfo &a, const TempFileInfo &b)
+              {
+                  return a.start_row < b.start_row;
+              });
+
     log("\nErstelle finale PNG-Datei...\n");
 
-    // PNG erstellen
+    // PNG Initialisierung
     FILE *fp = fopen(filename.c_str(), "wb");
     if (!fp)
     {
@@ -167,7 +169,7 @@ void write_image_chunked(const std::string &filename, int width, int height, int
 
     if (!png || !info || setjmp(png_jmpbuf(png)))
     {
-        std::cerr << "Fehler bei PNG-Initialisierung." << std::endl;
+        log("Fehler bei PNG-Initialisierung.\n");
         if (png)
             png_destroy_write_struct(&png, info ? &info : nullptr);
         fclose(fp);
@@ -180,38 +182,43 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     png_set_bgr(png);
     png_write_info(png, info);
 
-    log("Füge temporäre Dateien zusammen...\n");
+    // Schreibe Daten
     std::vector<uint8_t> row_buffer(width * 3);
     int total_rows = 0;
 
-    for (const auto &temp_file : temp_files)
+    for (const auto &temp_info : temp_files)
     {
-        FILE *temp_fp = fopen(temp_file.c_str(), "rb");
-        if (temp_fp)
-        {
-            int rows_in_file = 0;
-            while (fread(row_buffer.data(), 1, width * 3, temp_fp) == width * 3)
-            {
-                png_write_row(png, row_buffer.data());
-                rows_in_file++;
-                total_rows++;
+        FILE *temp_fp = fopen(temp_info.filename.c_str(), "rb");
+        if (!temp_fp)
+            continue;
 
-                if (total_rows % 1000 == 0)
+        for (int i = 0; i < temp_info.num_chunks && total_rows < height; ++i)
+        {
+            int rows_in_chunk = std::min(chunk_size, height - total_rows);
+            for (int row = 0; row < rows_in_chunk; ++row)
+            {
+                if (fread(row_buffer.data(), 1, width * 3, temp_fp) == width * 3)
                 {
-                    log("\rZeilen geschrieben: " + std::to_string(total_rows) + "/" +
-                        std::to_string(height) + " (" +
-                        std::to_string(total_rows * 100 / height) + "%)\n");
+                    png_write_row(png, row_buffer.data());
+                    total_rows++;
+                    if (total_rows % 1000 == 0)
+                    {
+                        log("\rZeilen geschrieben: " + std::to_string(total_rows) + "/" +
+                            std::to_string(height) + " (" +
+                            std::to_string(total_rows * 100 / height) + "%)\n");
+                    }
                 }
             }
-            fclose(temp_fp);
-            std::remove(temp_file.c_str());
         }
+
+        fclose(temp_fp);
+        std::remove(temp_info.filename.c_str());
     }
 
     png_write_end(png, info);
     png_destroy_write_struct(&png, &info);
     fclose(fp);
 
-    log("\nVerarbeitung erfolgreich abgeschlossen.\n");
-    log("Gesamtanzahl verarbeiteter Zeilen: " + std::to_string(total_rows) + "\n");
+    log("\nVerarbeitung abgeschlossen. " + std::to_string(total_rows) +
+        " von " + std::to_string(height) + " Zeilen geschrieben.\n");
 }
