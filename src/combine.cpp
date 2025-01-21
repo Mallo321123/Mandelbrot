@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <png.h>
 #include <thread> // Für sleep_for
+#include "progress.hpp"
 
 class ThreadPool
 {
@@ -89,6 +90,8 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     log("Starte Verarbeitung...\n");
     log("Gesamtanzahl Chunks: " + std::to_string(total_chunks) + "\n");
 
+    ProgressBar chunkProgress(total_chunks, "Verarbeite Chunks");
+
     auto process_chunk_range = [&](int start_chunk, int end_chunk, int temp_index)
     {
         std::string temp_filename = temp_dir + "/temp_" + std::to_string(temp_index) + ".tmp";
@@ -113,6 +116,7 @@ void write_image_chunked(const std::string &filename, int width, int height, int
                 total_rows += chunk.rows;
                 chunk.release();
                 processed_chunks++;
+                chunkProgress.update(processed_chunks);
             }
         }
 
@@ -185,6 +189,8 @@ void write_image_chunked(const std::string &filename, int width, int height, int
     std::vector<uint8_t> row_buffer(width * 3);
     int total_rows = 0;
 
+    ProgressBar writeProgress(height, "Schreibe Datei");
+
     for (const auto &temp_info : temp_files)
     {
         FILE *temp_fp = fopen(temp_info.filename.c_str(), "rb");
@@ -200,12 +206,7 @@ void write_image_chunked(const std::string &filename, int width, int height, int
                 {
                     png_write_row(png, row_buffer.data());
                     total_rows++;
-                    if (total_rows % 1000 == 0)
-                    {
-                        log("\rZeilen geschrieben: " + std::to_string(total_rows) + "/" +
-                            std::to_string(height) + " (" +
-                            std::to_string(total_rows * 100 / height) + "%)\n");
-                    }
+                    writeProgress.increment();
                 }
             }
         }

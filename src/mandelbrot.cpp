@@ -5,12 +5,16 @@
 #include <atomic>
 #include <vector>
 #include <filesystem>
+#include "progress.hpp"
 
 namespace fs = std::filesystem;
 std::mutex file_mutex;
 
 std::mutex progress_mutex;
 std::atomic<int> completed_chunks(0);
+
+ProgressBar* global_progress = nullptr;
+std::mutex global_progress_mutex;
 
 inline int mandelbrot(double cr, double ci, int max_iter) {
     /*
@@ -75,10 +79,6 @@ inline int mandelbrot(double cr, double ci, int max_iter) {
 
 void compute_chunk(int y_start, int y_end, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter, cv::Mat &image, int chunk_idx, int num_chunks, bool silent)
 {
-    int total_rows = y_end - y_start;
-    int processed_rows = 0;
-    auto last_update = std::chrono::steady_clock::now();
-
     for (int y = y_start; y < y_end; ++y)
     {
         uchar* rowPtr = image.ptr<uchar>(y - y_start);
@@ -95,29 +95,17 @@ void compute_chunk(int y_start, int y_end, int width, int height, double x_min, 
             rowPtr[x * 3 + 0] = static_cast<uchar>(255 * std::min(1.0, std::max(0.0, normalized - 0.66) * 3.0)); // Blau
         }
 
-        processed_rows++;
-        auto now = std::chrono::steady_clock::now();
-        if (!silent && now - last_update > std::chrono::milliseconds(500)) {
-            std::lock_guard<std::mutex> lock(progress_mutex);
-            std::cout << "\rChunk " << chunk_idx << "/" << num_chunks 
-                     << " - Zeilen: " << processed_rows << "/" << total_rows 
-                     << " (" << (processed_rows * 100 / total_rows) << "%)"
-                     << " | Gesamt: " << completed_chunks << "/" << num_chunks 
-                     << " Chunks" << std::flush;
-            last_update = now;
+        if (!silent) {
+            std::lock_guard<std::mutex> lock(global_progress_mutex);
+            if (global_progress) {
+                global_progress->increment();
+            }
         }
     }
 
     {
         std::lock_guard<std::mutex> lock(progress_mutex);
         completed_chunks++;
-        if (!silent)
-        {
-            std::cout << "\rChunk " << chunk_idx << " abgeschlossen. "
-                     << "Gesamt: " << completed_chunks << "/" << num_chunks 
-                     << " Chunks (" << (completed_chunks * 100 / num_chunks) << "%)" 
-                     << std::endl;
-        }
     }
 }
 
@@ -134,6 +122,10 @@ void generate_mandelbrot_chunked(int width, int height, double x_min, double x_m
     int num_chunks = (height + chunk_size - 1) / chunk_size;
 
     std::cout << "Anzahl der Chunks: " << num_chunks << std::endl;
+
+    if (!silent) {
+        global_progress = new ProgressBar(height, "Generiere Mandelbrot");
+    }
 
     for (int chunk_idx = 0; chunk_idx < num_chunks; ++chunk_idx)
     {
@@ -169,6 +161,11 @@ void generate_mandelbrot_chunked(int width, int height, double x_min, double x_m
             }
             threads.clear();
         }
+    }
+
+    if (!silent) {
+        delete global_progress;
+        global_progress = nullptr;
     }
 }
 
